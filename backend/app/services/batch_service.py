@@ -36,7 +36,8 @@ def update_batch(batch, payload):
 
 def publish_batch(batch):
     batch.status = "published"
-    batch.published_at = datetime.utcnow()
+    if batch.published_at is None:
+        batch.published_at = datetime.utcnow()
     for grade in batch.grades:
         grade.published = True
     db.session.commit()
@@ -47,7 +48,6 @@ def unpublish_batch(batch):
     if batch.status == "draft":
         return batch, "该批次尚未发布"
     batch.status = "draft"
-    batch.published_at = None
     for grade in batch.grades:
         grade.published = False
     db.session.commit()

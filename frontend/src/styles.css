@@ -453,6 +453,11 @@ blockquote {
   gap: 4px;
 }
 
+.batch-card-time {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
 .btn-sm {
   align-items: center;
   background: #1f7a6d;

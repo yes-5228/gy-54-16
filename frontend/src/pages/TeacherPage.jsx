@@ -17,6 +17,12 @@ const initialForm = {
   teacher: "",
 };
 
+function formatDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 export default function TeacherPage() {
   const [form, setForm] = useState(initialForm);
   const [grades, setGrades] = useState([]);
@@ -41,11 +47,6 @@ export default function TeacherPage() {
   const displayedGrades = activeBatchId
     ? grades.filter((g) => g.batchId === activeBatchId)
     : grades;
-
-  const pendingCount = useMemo(
-    () => displayedGrades.filter((g) => !g.published).length,
-    [displayedGrades]
-  );
 
   const batchPendingCount = useMemo(() => {
     if (!activeBatchId) return 0;
@@ -117,25 +118,27 @@ export default function TeacherPage() {
     }
   };
 
-  const handleUnpublish = async (batchId) => {
-    try {
-      await api.unpublishBatch(batchId);
-      setNotice({ type: "info", message: "批次已撤回发布，学生无法查看" });
-      await loadData();
-    } catch (error) {
-      setNotice({ type: "error", message: error.message });
-    }
+  const handleUnpublish = (batchId) => {
+    const ok = window.confirm("确认撤回发布？撤回后学生将无法查看该批次的所有成绩。");
+    if (!ok) return;
+    api.unpublishBatch(batchId)
+      .then(() => {
+        setNotice({ type: "info", message: "批次已撤回发布，学生无法查看" });
+        return loadData();
+      })
+      .catch((error) => setNotice({ type: "error", message: error.message }));
   };
 
-  const handleDeleteBatch = async (batchId) => {
-    try {
-      await api.deleteBatch(batchId);
-      if (activeBatchId === batchId) setActiveBatchId(null);
-      setNotice({ type: "success", message: "批次已删除" });
-      await loadData();
-    } catch (error) {
-      setNotice({ type: "error", message: error.message });
-    }
+  const handleDeleteBatch = (batchId) => {
+    const ok = window.confirm("确认删除该批次？批次内的所有成绩将一并删除，此操作不可恢复。");
+    if (!ok) return;
+    api.deleteBatch(batchId)
+      .then(() => {
+        if (activeBatchId === batchId) setActiveBatchId(null);
+        setNotice({ type: "success", message: "批次已删除" });
+        return loadData();
+      })
+      .catch((error) => setNotice({ type: "error", message: error.message }));
   };
 
   return (
@@ -206,6 +209,9 @@ export default function TeacherPage() {
                     {batch.gradeCount} 条成绩
                     {pending > 0 && <span className="status pending">{pending} 条待发布</span>}
                   </span>
+                  {batch.publishedAt && (
+                    <span className="batch-card-time">发布于 {formatDate(batch.publishedAt)}</span>
+                  )}
                 </button>
                 <div className="batch-card-actions">
                   {(batch.status === "draft" || pending > 0) && batch.gradeCount > 0 && (
