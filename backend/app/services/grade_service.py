@@ -47,7 +47,7 @@ def create_grade(payload):
         semester=payload["semester"],
         teacher=payload["teacher"],
         batch=batch,
-        published=batch.published if batch else False,
+        published=False,
     )
     db.session.add(grade)
     db.session.commit()
@@ -62,7 +62,10 @@ def update_grade(grade, payload):
     if "credit" in payload:
         grade.credit = float(payload["credit"])
     if "score" in payload:
-        grade.score = float(payload["score"])
+        new_score = float(payload["score"])
+        if grade.published and grade.score != new_score:
+            grade.published = False
+        grade.score = new_score
     if "semester" in payload:
         grade.semester = payload["semester"]
     if "teacher" in payload:

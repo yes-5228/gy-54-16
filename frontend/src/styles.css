@@ -490,6 +490,14 @@ blockquote {
   background: #fee2e2;
 }
 
+.btn-icon.publish {
+  color: #1f7a6d;
+}
+
+.btn-icon.publish:hover {
+  background: #dcfce7;
+}
+
 .btn-icon:disabled {
   opacity: 0.4;
   cursor: not-allowed;

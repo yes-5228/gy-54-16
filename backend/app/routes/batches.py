@@ -47,7 +47,9 @@ def update(batch_id):
 @batches_bp.delete("/<int:batch_id>")
 def delete(batch_id):
     batch = get_batch(batch_id)
-    delete_batch(batch)
+    error = delete_batch(batch)
+    if error:
+        return jsonify({"message": error}), 400
     return "", 204
 
 

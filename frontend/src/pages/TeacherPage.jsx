@@ -1,5 +1,5 @@
 import { Eye, EyeOff, FolderOpen, Plus, Save, Send, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import GradeTable from "../components/GradeTable";
 import Notice from "../components/Notice";
@@ -42,6 +42,16 @@ export default function TeacherPage() {
     ? grades.filter((g) => g.batchId === activeBatchId)
     : grades;
 
+  const pendingCount = useMemo(
+    () => displayedGrades.filter((g) => !g.published).length,
+    [displayedGrades]
+  );
+
+  const batchPendingCount = useMemo(() => {
+    if (!activeBatchId) return 0;
+    return grades.filter((g) => g.batchId === activeBatchId && !g.published).length;
+  }, [grades, activeBatchId]);
+
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
@@ -55,7 +65,11 @@ export default function TeacherPage() {
         payload.batchId = activeBatchId;
       }
       await api.createGrade(payload);
-      setNotice({ type: "success", message: activeBatchId ? "成绩已暂存到批次" : "成绩已录入" });
+      if (activeBatchId && activeBatch?.status === "published") {
+        setNotice({ type: "info", message: "成绩已暂存为草稿，需重新发布后学生才可见" });
+      } else {
+        setNotice({ type: "success", message: activeBatchId ? "成绩已暂存到批次" : "成绩已录入" });
+      }
       setForm({ ...initialForm, teacher: form.teacher, semester: form.semester });
       await loadData();
     } catch (error) {
@@ -70,6 +84,9 @@ export default function TeacherPage() {
     try {
       const updated = await api.updateGrade(gradeId, { score });
       setGrades((items) => items.map((item) => (item.id === gradeId ? updated : item)));
+      if (!updated.published) {
+        setNotice({ type: "info", message: "分数已修改，需重新发布批次后学生才可见" });
+      }
     } catch (error) {
       setNotice({ type: "error", message: error.message });
       await loadData();
@@ -92,8 +109,8 @@ export default function TeacherPage() {
 
   const handlePublish = async (batchId) => {
     try {
-      await api.publishBatch(batchId);
-      setNotice({ type: "success", message: "批次已发布，学生可查看成绩" });
+      const result = await api.publishBatch(batchId);
+      setNotice({ type: "success", message: `批次已发布，共 ${result.gradeCount} 条成绩对学生可见` });
       await loadData();
     } catch (error) {
       setNotice({ type: "error", message: error.message });
@@ -173,37 +190,43 @@ export default function TeacherPage() {
               <span>{grades.length} 条记录</span>
             </div>
           </button>
-          {batches.map((batch) => (
-            <div
-              key={batch.id}
-              className={`batch-card ${activeBatchId === batch.id ? "active" : ""}`}
-            >
-              <button className="batch-card-info" onClick={() => setActiveBatchId(batch.id)} type="button">
-                <strong>{batch.name}</strong>
-                <span>
-                  <span className={`status ${batch.status}`}>{batch.status === "draft" ? "草稿" : "已发布"}</span>
-                  {batch.gradeCount} 条成绩
-                </span>
-              </button>
-              <div className="batch-card-actions">
-                {batch.status === "draft" && (
-                  <button className="btn-icon" disabled={batch.gradeCount === 0} onClick={() => handlePublish(batch.id)} title="发布批次" type="button">
-                    <Send size={16} />
-                  </button>
-                )}
-                {batch.status === "published" && (
-                  <button className="btn-icon" onClick={() => handleUnpublish(batch.id)} title="撤回发布" type="button">
-                    <EyeOff size={16} />
-                  </button>
-                )}
-                {batch.status === "draft" && (
-                  <button className="btn-icon danger" onClick={() => handleDeleteBatch(batch.id)} title="删除批次" type="button">
-                    <Trash2 size={16} />
-                  </button>
-                )}
+          {batches.map((batch) => {
+            const pending = grades.filter((g) => g.batchId === batch.id && !g.published).length;
+            return (
+              <div
+                key={batch.id}
+                className={`batch-card ${activeBatchId === batch.id ? "active" : ""}`}
+              >
+                <button className="batch-card-info" onClick={() => setActiveBatchId(batch.id)} type="button">
+                  <strong>{batch.name}</strong>
+                  <span>
+                    <span className={`status ${batch.status}`}>
+                      {batch.status === "draft" ? "草稿" : "已发布"}
+                    </span>
+                    {batch.gradeCount} 条成绩
+                    {pending > 0 && <span className="status pending">{pending} 条待发布</span>}
+                  </span>
+                </button>
+                <div className="batch-card-actions">
+                  {(batch.status === "draft" || pending > 0) && batch.gradeCount > 0 && (
+                    <button className="btn-icon publish" onClick={() => handlePublish(batch.id)} title={batch.status === "draft" ? "发布批次" : "重新发布"} type="button">
+                      <Send size={16} />
+                    </button>
+                  )}
+                  {batch.status === "published" && (
+                    <button className="btn-icon" onClick={() => handleUnpublish(batch.id)} title="撤回发布" type="button">
+                      <EyeOff size={16} />
+                    </button>
+                  )}
+                  {batch.status === "draft" && (
+                    <button className="btn-icon danger" onClick={() => handleDeleteBatch(batch.id)} title="删除批次" type="button">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {!batches.length && <div className="empty">暂无批次，请新建一个批次开始录入成绩</div>}
         </div>
       </div>
@@ -212,7 +235,7 @@ export default function TeacherPage() {
         <form className="panel form-grid" onSubmit={submit}>
           {activeBatch && activeBatch.status === "published" && (
             <div className="notice info" style={{ gridColumn: "1 / -1" }}>
-              该批次已发布，新增成绩将自动标记为已发布。
+              该批次已发布。新增或修改成绩后需重新发布，学生才会看到更新。
             </div>
           )}
           <label>
@@ -264,13 +287,18 @@ export default function TeacherPage() {
         <div className="panel">
           <div className="panel-head">
             <h2>{activeBatch ? `${activeBatch.name} - 成绩列表` : "最近成绩"}</h2>
-            {activeBatch && activeBatch.status === "draft" && activeBatch.gradeCount > 0 && (
+            {activeBatch && activeBatch.gradeCount > 0 && batchPendingCount > 0 && (
               <button className="btn-publish" onClick={() => handlePublish(activeBatch.id)} type="button">
                 <Eye size={18} />
-                发布给学生
+                {activeBatch.status === "draft" ? "发布给学生" : `重新发布（${batchPendingCount} 条待发布）`}
               </button>
             )}
           </div>
+          {activeBatch && batchPendingCount > 0 && (
+            <div className="notice info" style={{ marginBottom: 14 }}>
+              当前批次有 <strong>{batchPendingCount}</strong> 条成绩待发布，学生暂不可见。
+            </div>
+          )}
           <GradeTable grades={displayedGrades} onScoreChange={changeScore} showPublished />
         </div>
       </div>

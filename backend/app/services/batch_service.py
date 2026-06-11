@@ -35,8 +35,6 @@ def update_batch(batch, payload):
 
 
 def publish_batch(batch):
-    if batch.status == "published":
-        return batch, "该批次已发布，不能重复发布"
     batch.status = "published"
     batch.published_at = datetime.utcnow()
     for grade in batch.grades:
@@ -57,5 +55,8 @@ def unpublish_batch(batch):
 
 
 def delete_batch(batch):
+    if batch.status == "published":
+        return "已发布的批次无法删除，请先撤回发布"
     db.session.delete(batch)
     db.session.commit()
+    return None
