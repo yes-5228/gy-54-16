@@ -23,6 +23,33 @@ class Student(db.Model):
         }
 
 
+class GradeBatch(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    semester = db.Column(db.String(40), nullable=False)
+    teacher = db.Column(db.String(80), nullable=False)
+    status = db.Column(db.String(20), default="draft", nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    published_at = db.Column(db.DateTime, nullable=True)
+
+    grades = db.relationship("Grade", back_populates="batch", cascade="all, delete-orphan")
+
+    def to_dict(self, include_grades=False):
+        result = {
+            "id": self.id,
+            "name": self.name,
+            "semester": self.semester,
+            "teacher": self.teacher,
+            "status": self.status,
+            "gradeCount": len(self.grades),
+            "createdAt": self.created_at.isoformat(),
+            "publishedAt": self.published_at.isoformat() if self.published_at else None,
+        }
+        if include_grades:
+            result["grades"] = [grade.to_dict() for grade in self.grades]
+        return result
+
+
 class Grade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey("student.id"), nullable=False)
@@ -32,10 +59,13 @@ class Grade(db.Model):
     score = db.Column(db.Float, nullable=False)
     semester = db.Column(db.String(40), nullable=False)
     teacher = db.Column(db.String(80), nullable=False)
+    batch_id = db.Column(db.Integer, db.ForeignKey("grade_batch.id"), nullable=True)
+    published = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     student = db.relationship("Student", back_populates="grades")
+    batch = db.relationship("GradeBatch", back_populates="grades")
     appeals = db.relationship("Appeal", back_populates="grade", cascade="all, delete-orphan")
 
     def to_dict(self):
@@ -53,6 +83,8 @@ class Grade(db.Model):
             "letter": score_to_letter(self.score),
             "semester": self.semester,
             "teacher": self.teacher,
+            "batchId": self.batch_id,
+            "published": self.published,
             "appealStatus": latest_appeal[0].status if latest_appeal else None,
             "createdAt": self.created_at.isoformat(),
             "updatedAt": self.updated_at.isoformat(),

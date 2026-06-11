@@ -390,6 +390,134 @@ blockquote {
   color: #be123c;
 }
 
+.batch-section {
+  display: grid;
+  gap: 14px;
+}
+
+.batch-form {
+  align-content: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.batch-form .primary-action {
+  grid-column: 1 / -1;
+}
+
+.batch-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.batch-card {
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.batch-card.active {
+  border-color: #1f7a6d;
+  box-shadow: 0 0 0 1px #1f7a6d;
+}
+
+.batch-card-info {
+  all: unset;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.batch-card-info strong {
+  font-size: 14px;
+}
+
+.batch-card-info span {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.batch-card-actions {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.btn-sm {
+  align-items: center;
+  background: #1f7a6d;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.btn-icon {
+  align-items: center;
+  background: #f1f5f9;
+  border: 0;
+  border-radius: 6px;
+  color: #475569;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.btn-icon:hover {
+  background: #e2e8f0;
+}
+
+.btn-icon.danger {
+  color: #be123c;
+}
+
+.btn-icon.danger:hover {
+  background: #fee2e2;
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-publish {
+  align-items: center;
+  background: #1f7a6d;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+}
+
+.status.draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status.published {
+  background: #dcfce7;
+  color: #15803d;
+}
+
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -421,7 +549,12 @@ blockquote {
   }
 
   .search-bar,
-  .form-grid {
+  .form-grid,
+  .batch-form {
+    grid-template-columns: 1fr;
+  }
+
+  .batch-list {
     grid-template-columns: 1fr;
   }
 }

@@ -1,10 +1,13 @@
 from ..extensions import db
-from ..models import Grade, Student
+from ..models import Grade, GradeBatch, Student
 from .gpa import calculate_summary
 
 
-def list_grades():
-    return Grade.query.order_by(Grade.updated_at.desc()).all()
+def list_grades(published_only=False):
+    query = Grade.query
+    if published_only:
+        query = query.filter_by(published=True)
+    return query.order_by(Grade.updated_at.desc()).all()
 
 
 def get_or_create_student(student_no, name, major="", class_name=""):
@@ -32,6 +35,9 @@ def create_grade(payload):
         payload.get("major", ""),
         payload.get("className", ""),
     )
+    batch = None
+    if payload.get("batchId"):
+        batch = GradeBatch.query.get(payload["batchId"])
     grade = Grade(
         student=student,
         course_code=payload["courseCode"],
@@ -40,6 +46,8 @@ def create_grade(payload):
         score=float(payload["score"]),
         semester=payload["semester"],
         teacher=payload["teacher"],
+        batch=batch,
+        published=batch.published if batch else False,
     )
     db.session.add(grade)
     db.session.commit()
@@ -67,7 +75,7 @@ def get_transcript(student_no):
     student = Student.query.filter_by(student_no=student_no).first()
     if not student:
         return None
-    grades = Grade.query.filter_by(student_id=student.id).order_by(Grade.semester.desc(), Grade.course_code).all()
+    grades = Grade.query.filter_by(student_id=student.id, published=True).order_by(Grade.semester.desc(), Grade.course_code).all()
     return {
         "student": student.to_dict(),
         "summary": calculate_summary(grades),

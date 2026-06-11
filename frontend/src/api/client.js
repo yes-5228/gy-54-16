@@ -18,7 +18,8 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request("/health"),
-  listGrades: () => request("/grades"),
+  listGrades: (publishedOnly = false) =>
+    request(publishedOnly ? "/grades?published=true" : "/grades"),
   createGrade: (payload) =>
     request("/grades", {
       method: "POST",
@@ -40,5 +41,29 @@ export const api = {
     request(`/appeals/${id}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
+    }),
+  listBatches: () => request("/batches"),
+  getBatch: (id) => request(`/batches/${id}`),
+  createBatch: (payload) =>
+    request("/batches", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateBatch: (id, payload) =>
+    request(`/batches/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  deleteBatch: (id) =>
+    request(`/batches/${id}`, {
+      method: "DELETE",
+    }),
+  publishBatch: (id) =>
+    request(`/batches/${id}/publish`, {
+      method: "POST",
+    }),
+  unpublishBatch: (id) =>
+    request(`/batches/${id}/unpublish`, {
+      method: "POST",
     }),
 };

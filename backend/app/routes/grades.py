@@ -9,7 +9,8 @@ grades_bp = Blueprint("grades", __name__)
 
 @grades_bp.get("")
 def index():
-    return jsonify([grade.to_dict() for grade in list_grades()])
+    published_only = request.args.get("published") == "true"
+    return jsonify([grade.to_dict() for grade in list_grades(published_only=published_only)])
 
 
 @grades_bp.post("")

@@ -4,7 +4,7 @@ const statusMap = {
   rejected: "已驳回",
 };
 
-export default function GradeTable({ grades, compact = false, onScoreChange }) {
+export default function GradeTable({ grades, compact = false, onScoreChange, showPublished = false }) {
   if (!grades.length) {
     return <div className="empty">暂无成绩记录</div>;
   }
@@ -22,6 +22,7 @@ export default function GradeTable({ grades, compact = false, onScoreChange }) {
             <th>成绩</th>
             <th>绩点</th>
             <th>等级</th>
+            {showPublished && <th>状态</th>}
             <th>申诉</th>
           </tr>
         </thead>
@@ -52,6 +53,15 @@ export default function GradeTable({ grades, compact = false, onScoreChange }) {
               </td>
               <td>{grade.gpaPoint.toFixed(1)}</td>
               <td>{grade.letter}</td>
+              {showPublished && (
+                <td>
+                  {grade.published ? (
+                    <span className="status approved">已发布</span>
+                  ) : (
+                    <span className="status draft">草稿</span>
+                  )}
+                </td>
+              )}
               <td>
                 {grade.appealStatus ? (
                   <span className={`status ${grade.appealStatus}`}>{statusMap[grade.appealStatus]}</span>
